@@ -28,7 +28,7 @@
 ## 🔗 SOCIAL MEDIA 🌐
 <p align="center">
 <a href="https://facebook.com/100071880593545"><img src="https://img.shields.io/badge/Facebook-💙?style=for-the-badge&logo=facebook" /></a>
-<a href="https://github.com/SAGOR-KINGx"><img src="https://img.shields.io/badge/GitHub-⚫?style=for-the-badge&logo=github" /></a>
+<a href="https://github.com/AminulSardar1"><img src="https://img.shields.io/badge/GitHub-⚫?style=for-the-badge&logo=github" /></a>
 <a href="https://wa.me/+8801704407109"><img src="https://img.shields.io/badge/what'sapp-💜?style=for-the-badge&logo=whatsapp" /></a>
 <a href="https://t.me/Aminulsordaro"><img src="https://img.shields.io/badge/Telegram-💙?style=for-the-badge&logo=telegram" /></a>
 </p>
