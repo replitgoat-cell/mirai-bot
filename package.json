@@ -1,8 +1,8 @@
 {
-  "name": "v5",
+  "name": "mirai-bot",
   "version": "10.1.1",
   "description": "a simple bot create by SaGor",
-  "main": "SaGor.js",
+  "main": "index.js",
   "engines": {
     "node": "20.x",
     "npm": ">=10.0.0"
