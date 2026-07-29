@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAGOR BOT — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #030608;
+  --panel: #080d10;
+  --card: rgba(0,220,255,0.04);
+  --border: rgba(0,220,255,0.12);
+  --border-bright: rgba(0,220,255,0.35);
+  --cyan: #00dcff;
+  --green: #39ff14;
+  --orange: #ff9500;
+  --red: #ff3355;
+  --pink: #ff2d78;
+  --purple: #bf5fff;
+  --yellow: #ffe066;
+  --text: #c0dde4;
+  --muted: #3d6470;
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-head: 'Orbitron', sans-serif;
+  --font-body: 'Exo 2', sans-serif;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,220,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,220,255,0.025) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+}
+.scanlines {
+  position: fixed; inset: 0; z-index: 1000; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+}
+
+/* NAVBAR */
+.navbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(3,6,8,0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 58px;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-head); font-size: 15px; font-weight: 900;
+  color: var(--cyan); letter-spacing: 3px;
+  text-shadow: 0 0 15px rgba(0,220,255,0.4);
+}
+.nav-logo-icon {
+  width: 34px; height: 34px; border: 1px solid var(--cyan);
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 15px;
+  animation: logoPulse 2.5s ease-in-out infinite;
+}
+@keyframes logoPulse { 0%,100%{box-shadow:0 0 10px rgba(0,220,255,0.2)} 50%{box-shadow:0 0 25px rgba(0,220,255,0.5)} }
+.nav-right { display: flex; align-items: center; gap: 10px; }
+.nav-time { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.nav-ping {
+  font-family: var(--font-mono); font-size: 11px; color: var(--green);
+  background: rgba(57,255,20,0.08); border: 1px solid rgba(57,255,20,0.2);
+  padding: 3px 10px; border-radius: 3px; letter-spacing: 1px;
+}
+.logout-btn {
+  background: transparent; border: 1px solid rgba(255,51,85,0.3);
+  color: var(--red); font-family: var(--font-mono); font-size: 10px;
+  padding: 5px 10px; border-radius: 3px; cursor: pointer;
+  letter-spacing: 1px; transition: all 0.2s;
+}
+.logout-btn:hover { background: rgba(255,51,85,0.1); border-color: var(--red); }
+
+/* TAB BAR */
+.tab-bar {
+  background: rgba(8,13,16,0.98); border-bottom: 1px solid var(--border);
+  display: flex; gap: 0; overflow-x: auto; padding: 0 20px;
+  position: sticky; top: 58px; z-index: 99;
+}
+.tab-bar::-webkit-scrollbar { height: 0; }
+.tab-btn {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--muted); font-family: var(--font-mono); font-size: 10px;
+  padding: 13px 18px; cursor: pointer; letter-spacing: 2px;
+  text-transform: uppercase; transition: all 0.2s; white-space: nowrap;
+}
+.tab-btn:hover { color: var(--cyan); }
+.tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+/* LAYOUT */
+.main-content { flex: 1; padding: 20px; max-width: 1280px; margin: 0 auto; width: 100%; position: relative; z-index: 2; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* CARD */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 4px; position: relative; overflow: hidden; margin-bottom: 16px;
+}
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent); opacity: 0.35;
+}
+.card-title {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--cyan); letter-spacing: 3px; text-transform: uppercase;
+  padding: 13px 18px 0; display: flex; align-items: center; gap: 8px;
+}
+.card-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: blink 1.5s infinite; }
+.card-body { padding: 14px 18px 18px; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* STATS GRID */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 12px; margin-bottom: 16px;
+}
+.stat-box {
+  background: rgba(0,220,255,0.03); border: 1px solid var(--border);
+  border-radius: 4px; padding: 16px 14px; text-align: center;
+  transition: border-color 0.2s, transform 0.2s; cursor: default;
+}
+.stat-box:hover { border-color: var(--border-bright); transform: translateY(-2px); }
+.stat-icon { font-size: 20px; margin-bottom: 7px; }
+.stat-label { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+.stat-value { font-family: var(--font-head); font-size: 18px; font-weight: 700; color: var(--text); }
+.stat-value.ok { color: var(--green); text-shadow: 0 0 8px rgba(57,255,20,0.3); }
+.stat-value.warn { color: var(--orange); }
+.stat-value.error { color: var(--red); }
+.stat-value.cyan { color: var(--cyan); }
+.stat-value.purple { color: var(--purple); }
+.prog-wrap { margin-top: 7px; }
+.prog-bar { height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+.prog-lbl { font-family: var(--font-mono); font-size: 9px; color: var(--muted); margin-top: 3px; text-align: right; }
+
+/* PING */
+.ping-big { font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--green); text-shadow: 0 0 12px rgba(57,255,20,0.4); }
+.ping-unit { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+/* BOT CONTROL */
+.ctrl-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 16px 18px; }
+.big-btn {
+  border: none; border-radius: 3px; font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 2px; padding: 10px 18px;
+  cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+  display: flex; align-items: center; gap: 7px; font-weight: 600;
+}
+.btn-start { background: rgba(57,255,20,0.1); border: 1px solid var(--green); color: var(--green); }
+.btn-start:hover { background: rgba(57,255,20,0.2); box-shadow: 0 0 15px rgba(57,255,20,0.2); }
+.btn-stop { background: rgba(255,51,85,0.1); border: 1px solid var(--red); color: var(--red); }
+.btn-stop:hover { background: rgba(255,51,85,0.2); box-shadow: 0 0 15px rgba(255,51,85,0.2); }
+.btn-restart { background: rgba(255,149,0,0.1); border: 1px solid var(--orange); color: var(--orange); }
+.btn-restart:hover { background: rgba(255,149,0,0.2); box-shadow: 0 0 15px rgba(255,149,0,0.2); }
+.led-row { display: flex; align-items: center; gap: 8px; margin-left: auto; font-family: var(--font-mono); font-size: 11px; }
+.led { width: 10px; height: 10px; border-radius: 50%; }
+.led.on { background: var(--green); box-shadow: 0 0 10px var(--green); animation: ledPulse 1.5s infinite; }
+.led.off { background: var(--red); box-shadow: 0 0 8px var(--red); }
+@keyframes ledPulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+/* FORMS */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid.one { grid-template-columns: 1fr; }
+.flbl { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 5px; }
+.finput, .ftarea, .fselect {
+  width: 100%; background: rgba(0,220,255,0.03);
+  border: 1px solid var(--border); border-radius: 3px;
+  color: var(--text); font-family: var(--font-mono); font-size: 12px;
+  padding: 10px 12px; outline: none; transition: all 0.2s; resize: vertical;
+}
+.finput:focus, .ftarea:focus, .fselect:focus {
+  border-color: var(--cyan); background: rgba(0,220,255,0.05);
+  box-shadow: 0 0 0 2px rgba(0,220,255,0.06);
+}
+.ftarea { min-height: 100px; }
+.fselect option { background: #080d10; }
+.finput::placeholder, .ftarea::placeholder { color: var(--muted); }
+.action-row { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+.sbtn {
+  background: rgba(0,220,255,0.08); border: 1px solid var(--cyan);
+  color: var(--cyan); font-family: var(--font-mono); font-size: 11px;
+  padding: 9px 22px; border-radius: 3px; cursor: pointer;
+  letter-spacing: 2px; text-transform: uppercase; transition: all 0.2s;
+}
+.sbtn:hover { background: rgba(0,220,255,0.15); box-shadow: 0 0 18px rgba(0,220,255,0.2); }
+.sbtn.purple { border-color: var(--purple); color: var(--purple); background: rgba(191,95,255,0.08); }
+.sbtn.purple:hover { background: rgba(191,95,255,0.15); }
+.sbtn.orange { border-color: var(--orange); color: var(--orange); background: rgba(255,149,0,0.08); }
+.sbtn.orange:hover { background: rgba(255,149,0,0.15); }
+
+/* TABLE */
+.dtable { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; }
+.dtable th { color: var(--cyan); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.dtable td { padding: 8px 12px; border-bottom: 1px solid rgba(0,220,255,0.05); vertical-align: middle; }
+.dtable tr:hover td { background: rgba(0,220,255,0.03); }
+.td-name { color: var(--cyan); }
+.td-muted { color: var(--muted); font-size: 10px; }
+.badge { font-size: 9px; padding: 2px 8px; border-radius: 2px; letter-spacing: 1px; text-transform: uppercase; }
+.badge-cmd { background: rgba(0,220,255,0.1); color: var(--cyan); border: 1px solid rgba(0,220,255,0.2); }
+.badge-evt { background: rgba(191,95,255,0.1); color: var(--purple); border: 1px solid rgba(191,95,255,0.2); }
+.del-btn { background: transparent; border: 1px solid rgba(255,51,85,0.25); color: var(--red); font-family: var(--font-mono); font-size: 9px; padding: 3px 8px; border-radius: 2px; cursor: pointer; transition: all 0.2s; }
+.del-btn:hover { background: rgba(255,51,85,0.12); border-color: var(--red); }
+.empty { font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-align: center; padding: 28px; letter-spacing: 1px; }
+
+/* COOKIE */
+.ck-list { display: flex; flex-direction: column; gap: 10px; }
+.ck-item { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 3px; padding: 12px; display: flex; align-items: center; gap: 12px; }
+.ck-num { font-family: var(--font-head); font-size: 11px; color: var(--purple); min-width: 20px; }
+.ck-preview { flex: 1; font-family: var(--font-mono); font-size: 10px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ck-badge { font-size: 9px; padding: 2px 8px; border-radius: 2px; letter-spacing: 1px; white-space: nowrap; }
+.ck-badge.yes { background: rgba(57,255,20,0.1); color: var(--green); border: 1px solid rgba(57,255,20,0.2); }
+.ck-badge.no  { background: rgba(255,51,85,0.1); color: var(--red); border: 1px solid rgba(255,51,85,0.15); }
+
+/* LOG */
+.log-box {
+  background: #010305; border: 1px solid var(--border); border-radius: 3px;
+  height: 300px; overflow-y: auto; padding: 10px;
+  font-family: var(--font-mono); font-size: 11px; line-height: 1.75;
+}
+.log-box::-webkit-scrollbar { width: 3px; }
+.log-box::-webkit-scrollbar-thumb { background: var(--border-bright); }
+.log-line { display: flex; gap: 8px; }
+.log-ts { color: var(--muted); flex-shrink: 0; font-size: 10px; }
+.log-tag { flex-shrink: 0; padding: 0 5px; border-radius: 2px; font-size: 9px; letter-spacing: 1px; }
+.log-tag.info { color: var(--cyan); background: rgba(0,220,255,0.08); }
+.log-tag.ok { color: var(--green); background: rgba(57,255,20,0.08); }
+.log-tag.warn { color: var(--orange); background: rgba(255,149,0,0.08); }
+.log-tag.error { color: var(--red); background: rgba(255,51,85,0.08); }
+.log-msg { color: var(--text); word-break: break-all; }
+.log-ctrl { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.log-ctrl-l { display: flex; gap: 8px; align-items: center; }
+.sm-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: var(--font-mono); font-size: 10px; padding: 4px 10px; border-radius: 3px; cursor: pointer; transition: all 0.2s; }
+.sm-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.log-cnt { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+
+/* CHART */
+#uptimeChart { width: 100% !important; height: 140px !important; display: block; border-radius: 3px; background: rgba(0,0,0,0.35); }
+
+/* PROFILE */
+.prof-top { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: 20px 20px 0; }
+.av-wrap { position: relative; flex-shrink: 0; }
+.av { width: 78px; height: 78px; border-radius: 50%; border: 2px solid var(--cyan); }
+.av-ring { position: absolute; inset: -6px; border: 1px solid rgba(0,220,255,0.3); border-radius: 50%; animation: spin 5s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.prof-name { font-family: var(--font-head); font-size: 17px; color: var(--cyan); margin-bottom: 4px; }
+.prof-role { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.social-row { display: flex; gap: 9px; }
+.s-btn { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; text-decoration: none; color: #fff; transition: transform 0.2s, box-shadow 0.2s; }
+.s-btn:hover { transform: scale(1.15); box-shadow: 0 0 12px rgba(0,220,255,0.3); }
+.fb { background: #3b5998; } .tk { background: #111; border: 1px solid #333; }
+.tg { background: #0088cc; } .wa { background: #25d366; } .gh { background: #24292e; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 22px; right: 22px; z-index: 9999;
+  background: rgba(0,220,255,0.08); border: 1px solid var(--cyan);
+  color: var(--cyan); font-family: var(--font-mono); font-size: 12px;
+  padding: 11px 18px; border-radius: 4px; letter-spacing: 1px;
+  transform: translateY(80px); opacity: 0; transition: all 0.3s;
+  pointer-events: none; max-width: 300px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.err { background: rgba(255,51,85,0.08); border-color: var(--red); color: var(--red); }
+.toast.ok { background: rgba(57,255,20,0.08); border-color: var(--green); color: var(--green); }
+
+@media(max-width:640px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .main-content { padding: 12px; }
+  .navbar { padding: 0 12px; }
+  .tab-btn { padding: 13px 12px; }
+  .nav-time { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="scanlines"></div>
+<div class="toast" id="toast"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">🤖</div>
+    SAGOR BOT
+  </div>
+  <div class="nav-right">
+    <span class="nav-time" id="navTime">—</span>
+    <span class="nav-ping" id="navPing">PING: — ms</span>
+    <button class="logout-btn" onclick="doLogout()">⏻ LOGOUT</button>
+  </div>
+</nav>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="overview" onclick="switchTab(this,'overview')">📊 Overview</button>
+  <button class="tab-btn" data-tab="control" onclick="switchTab(this,'control')">🤖 Bot Control</button>
+  <button class="tab-btn" data-tab="cmd" onclick="switchTab(this,'cmd')">⚡ Commands</button>
+  <button class="tab-btn" data-tab="event" onclick="switchTab(this,'event')">🎯 Events</button>
+  <button class="tab-btn" data-tab="cookie" onclick="switchTab(this,'cookie')">🍪 Cookie</button>
+  <button class="tab-btn" data-tab="logs" onclick="switchTab(this,'logs')">📋 Live Log</button>
+  <button class="tab-btn" data-tab="profile" onclick="switchTab(this,'profile')">👤 Profile</button>
+</div>
+
+<!-- CONTENT -->
+<div class="main-content">
+
+<!-- ======= OVERVIEW ======= -->
+<div class="tab-panel active" id="tab-overview">
+  <div class="stats-grid">
+    <div class="stat-box"><div class="stat-icon">🤖</div><div class="stat-label">Bot Status</div><div class="stat-value" id="sStatus">—</div></div>
+    <div class="stat-box"><div class="stat-icon">⏱️</div><div class="stat-label">Uptime</div><div class="stat-value cyan" id="sUptime">—</div></div>
+    <div class="stat-box"><div class="stat-icon">🔄</div><div class="stat-label">Restarts</div><div class="stat-value" id="sRestarts">—</div></div>
+    <div class="stat-box"><div class="stat-icon">💓</div><div class="stat-label">Heartbeat</div><div class="stat-value cyan" id="sHb">—</div></div>
+    <div class="stat-box"><div class="stat-icon">⚡</div><div class="stat-label">Cmd Count</div><div class="stat-value purple" id="sCmdCount">0</div></div>
+    <div class="stat-box"><div class="stat-icon">🎯</div><div class="stat-label">Event Count</div><div class="stat-value purple" id="sEvtCount">0</div></div>
+    <div class="stat-box">
+      <div class="stat-icon">🏓</div><div class="stat-label">Ping</div>
+      <div class="ping-big" id="sPing">—<span class="ping-unit"> ms</span></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">🧠</div><div class="stat-label">RAM</div>
+      <div class="stat-value warn" id="sRam">—</div>
+      <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="ramBar" style="background:var(--orange);width:0%"></div></div><div class="prog-lbl" id="ramLbl">—</div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">💻</div><div class="stat-label">CPU</div>
+      <div class="stat-value cyan" id="sCpu">—</div>
+      <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="cpuBar" style="background:var(--cyan);width:0%"></div></div><div class="prog-lbl" id="cpuLbl">—</div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">💾</div><div class="stat-label">Storage</div>
+      <div class="stat-value ok" id="sRom">—</div>
+      <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="romBar" style="background:var(--green);width:0%"></div></div><div class="prog-lbl" id="romLbl">—</div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">🖥️</div><div class="stat-label">GPU</div>
+      <div class="stat-value" id="sGpu">N/A</div>
+      <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="gpuBar" style="background:var(--purple);width:0%"></div></div><div class="prog-lbl" id="gpuLbl">—</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> UPTIME HISTORY (last 20 polls)</div>
+    <div class="card-body"><canvas id="uptimeChart"></canvas></div>
+  </div>
+</div>
+
+<!-- ======= BOT CONTROL ======= -->
+<div class="tab-panel" id="tab-control">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> BOT CONTROL</div>
+    <div class="ctrl-row">
+      <button class="big-btn btn-start" onclick="botAction('start')">▶ START BOT</button>
+      <button class="big-btn btn-stop" onclick="botAction('stop')">⬛ STOP BOT</button>
+      <button class="big-btn btn-restart" onclick="botAction('restart')">↻ RESTART</button>
+      <div class="led-row">
+        <div class="led on" id="ctrlLed"></div>
+        <span id="ctrlTxt">CONNECTING...</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> SYSTEM INFO</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div><label class="flbl">Node.js Version</label><input class="finput" id="nodeVer" readonly value="—"></div>
+        <div><label class="flbl">Platform</label><input class="finput" id="platInfo" readonly value="Linux/Cloud"></div>
+        <div><label class="flbl">Bot Version</label><input class="finput" readonly value="v5.0.0"></div>
+        <div><label class="flbl">Timezone</label><input class="finput" readonly value="Asia/Dhaka"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= COMMANDS ======= -->
+<div class="tab-panel" id="tab-cmd">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> ADD NEW COMMAND</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div><label class="flbl">Command Name</label><input class="finput" id="cmdName" placeholder="e.g. hello"></div>
+        <div><label class="flbl">Description (optional)</label><input class="finput" id="cmdDesc" placeholder="What this command does"></div>
+      </div>
+      <div style="margin-top:12px">
+        <label class="flbl">Command Code</label>
+        <textarea class="ftarea" id="cmdCode" placeholder="module.exports = { config: { name: 'hello', ... }, run: async ({ api, event }) => { ... } }"></textarea>
+      </div>
+      <div class="action-row"><button class="sbtn" onclick="addCmd()">⚡ ADD COMMAND</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> COMMAND LIST (<span id="cmdCnt">0</span>)</div>
+    <div class="card-body" style="padding-top:8px"><div id="cmdWrap"><div class="empty">No commands added yet</div></div></div>
+  </div>
+</div>
+
+<!-- ======= EVENTS ======= -->
+<div class="tab-panel" id="tab-event">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> ADD NEW EVENT</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div><label class="flbl">Event Name</label><input class="finput" id="evtName" placeholder="e.g. welcome"></div>
+        <div><label class="flbl">Description (optional)</label><input class="finput" id="evtDesc" placeholder="What this event does"></div>
+      </div>
+      <div style="margin-top:12px">
+        <label class="flbl">Event Code</label>
+        <textarea class="ftarea" id="evtCode" placeholder="module.exports = { config: { name: 'welcome', ... }, run: async ({ api, event }) => { ... } }"></textarea>
+      </div>
+      <div class="action-row"><button class="sbtn purple" onclick="addEvt()">🎯 ADD EVENT</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> EVENT LIST (<span id="evtCnt">0</span>)</div>
+    <div class="card-body" style="padding-top:8px"><div id="evtWrap"><div class="empty">No events added yet</div></div></div>
+  </div>
+</div>
+
+<!-- ======= COOKIE ======= -->
+<div class="tab-panel" id="tab-cookie">
+  <div class="card" style="border-color:rgba(191,95,255,0.15)">
+    <div class="card-title" style="color:var(--purple)"><span class="dot" style="background:var(--purple)"></span> ACTIVE COOKIES</div>
+    <div class="card-body"><div class="ck-list" id="ckDisplay"><div class="empty">Loading...</div></div></div>
+  </div>
+  <div class="card" style="border-color:rgba(191,95,255,0.15)">
+    <div class="card-title" style="color:var(--purple)"><span class="dot" style="background:var(--purple)"></span> ADD / UPDATE COOKIE</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div>
+          <label class="flbl">Cookie Slot</label>
+          <select class="fselect" id="ckSlot">
+            <option value="1">Cookie 1 (cookie.txt)</option>
+            <option value="2">Cookie 2 (cookie2.txt)</option>
+            <option value="3">Cookie 3 (cookie3.txt)</option>
+          </select>
+        </div>
+        <div><label class="flbl">Label (optional)</label><input class="finput" id="ckLabel" placeholder="e.g. Main Account"></div>
+      </div>
+      <div style="margin-top:12px">
+        <label class="flbl">Cookie Data (JSON / Appstate)</label>
+        <textarea class="ftarea" id="ckData" placeholder='[{"key":"c_user","value":"..."},{"key":"xs","value":"..."}]' style="min-height:110px"></textarea>
+      </div>
+      <div class="action-row">
+        <button class="sbtn purple" onclick="saveCk()">🍪 SAVE COOKIE</button>
+        <button class="sbtn orange" onclick="setActiveCk()">✅ SET ACTIVE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= LIVE LOG ======= -->
+<div class="tab-panel" id="tab-logs">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> LIVE SYSTEM LOG</div>
+    <div class="card-body">
+      <div class="log-ctrl">
+        <div class="log-ctrl-l">
+          <button class="sm-btn" onclick="clearLog()">🗑 Clear</button>
+          <button class="sm-btn" onclick="toggleAS()">⬇ Auto-scroll: <span id="asTxt">ON</span></button>
+        </div>
+        <span class="log-cnt">Lines: <span id="logCnt">0</span></span>
+      </div>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= PROFILE ======= -->
+<div class="tab-panel" id="tab-profile">
+  <div class="card">
+    <div class="prof-top">
+      <div class="av-wrap">
+        <img src="https://i.ibb.co.com/6JPqxzwK/65ce49408be82ad3f336bf32d4d69bd3.jpg" class="av" onerror="this.src='https://i.imgur.com/HeIi0wU.png'" alt="Avatar">
+        <div class="av-ring"></div>
+      </div>
+      <div>
+        <div class="prof-name">JAHIDUL ISLAM SAGOR</div>
+        <div class="prof-role">Bot Creator • SAGOR-BOT v5.0.0</div>
+        <div class="social-row">
+          <a href="https://facebook.com/SAGOR.69x" target="_blank" class="s-btn fb"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://tiktok.com/@11sagor_islam" target="_blank" class="s-btn tk"><i class="fab fa-tiktok"></i></a>
+          <a href="https://telegram.me/@xxSaGorxx" target="_blank" class="s-btn tg"><i class="fab fa-telegram-plane"></i></a>
+          <a href="https://wa.me/+8801611079915" target="_blank" class="s-btn wa"><i class="fab fa-whatsapp"></i></a>
+          <a href="https://github.com/SAGOR-KINGx" target="_blank" class="s-btn gh"><i class="fab fa-github"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="card-body" style="margin-top:18px">
+      <div class="form-grid">
+        <div><label class="flbl">Bot Name</label><input class="finput" value="—𝐒𝐀𝐆𝐎𝐑-:)🩶🌷" readonly></div>
+        <div><label class="flbl">Prefix</label><input class="finput" value="." readonly></div>
+        <div><label class="flbl">Version</label><input class="finput" value="5.0.0" readonly></div>
+        <div><label class="flbl">Language</label><input class="finput" value="English (en)" readonly></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main-content -->
+
+<script>
+/* ── AUTH ── */
+(function(){
+  if(!sessionStorage.getItem('sagor_auth')) window.location.href='/login';
+})();
+function doLogout(){ sessionStorage.removeItem('sagor_auth'); window.location.href='/login'; }
+
+/* ── TABS ── */
+function switchTab(btn, id){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── TOAST ── */
+let _tt;
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+/* ── CLOCK ── */
+function tick(){
+  const n=new Date();
+  document.getElementById('navTime').textContent=n.toLocaleTimeString('en-GB',{hour12:false})+' BD';
+}
+setInterval(tick,1000); tick();
+
+/* ── PING ── */
+let pingHist=[], pingAvg=0;
+async function measurePing(){
+  const t0=performance.now();
+  try{
+    await fetch('/health?_='+Date.now(),{cache:'no-store'});
+    const ms=Math.round(performance.now()-t0);
+    pingHist.push(ms); if(pingHist.length>10) pingHist.shift();
+    pingAvg=Math.round(pingHist.reduce((a,b)=>a+b,0)/pingHist.length);
+    const col = pingAvg<100?'#39ff14':pingAvg<300?'#ff9500':'#ff3355';
+    document.getElementById('navPing').textContent='PING: '+ms+' ms';
+    document.getElementById('navPing').style.color=col;
+    const pe=document.getElementById('sPing');
+    if(pe) pe.innerHTML=pingAvg+'<span class="ping-unit"> ms</span>';
+  }catch(e){
+    document.getElementById('navPing').textContent='PING: ERR';
+  }
+}
+setInterval(measurePing,5000); measurePing();
+
+/* ── CHART ── */
+const canvas=document.getElementById('uptimeChart');
+const ctx=canvas.getContext('2d');
+const hist=[]; const MAXP=20;
+function resizeC(){ canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight||140; }
+window.addEventListener('resize',()=>{resizeC();drawChart();}); resizeC();
+function drawChart(){
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  if(hist.length<2){ ctx.fillStyle='#333'; ctx.font='12px Share Tech Mono'; ctx.textAlign='center'; ctx.fillText('Collecting data...',W/2,H/2); return; }
+  const pad={t:14,b:26,l:36,r:14};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  ctx.strokeStyle='#111'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){ const y=pad.t+(cH/4)*i; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke(); }
+  const maxU=Math.max(...hist.map(h=>h.u),60);
+  const xS=cW/(MAXP-1);
+  const xOf=i=>pad.l+i*xS, yOf=v=>pad.t+cH-(v/maxU)*cH;
+  const g=ctx.createLinearGradient(0,pad.t,0,pad.t+cH);
+  g.addColorStop(0,'rgba(0,220,255,0.18)'); g.addColorStop(1,'rgba(0,220,255,0)');
+  ctx.beginPath(); ctx.moveTo(xOf(0),yOf(hist[0].u));
+  for(let i=1;i<hist.length;i++) ctx.lineTo(xOf(i),yOf(hist[i].u));
+  ctx.lineTo(xOf(hist.length-1),pad.t+cH); ctx.lineTo(xOf(0),pad.t+cH);
+  ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+  ctx.beginPath(); ctx.strokeStyle='#00dcff'; ctx.lineWidth=2; ctx.lineJoin='round';
+  ctx.moveTo(xOf(0),yOf(hist[0].u));
+  for(let i=1;i<hist.length;i++) ctx.lineTo(xOf(i),yOf(hist[i].u));
+  ctx.stroke();
+  for(let i=0;i<hist.length;i++){ ctx.beginPath(); ctx.arc(xOf(i),yOf(hist[i].u),3,0,Math.PI*2); ctx.fillStyle=hist[i].ok?'#39ff14':'#ff3355'; ctx.fill(); }
+  ctx.fillStyle='#444'; ctx.font='10px Share Tech Mono'; ctx.textAlign='right';
+  for(let i=0;i<=4;i++) ctx.fillText(Math.round((maxU/4)*(4-i))+'s',pad.l-3,pad.t+(cH/4)*i+4);
+}
+
+/* ── HEALTH FETCH ── */
+async function fetchHealth(){
+  try{
+    const res=await fetch('/health?_='+Date.now(),{cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const d=await res.json();
+    const upSec=parseInt(d.uptime)||0;
+    const isOk=d.status==='ok';
+    hist.push({u:upSec,ok:isOk}); if(hist.length>MAXP) hist.shift();
+
+    setVal('sStatus', isOk?'ONLINE':'OFFLINE', isOk?'ok':'error');
+    setVal('sUptime', fmtUp(upSec), 'cyan');
+    const rc=d.restarts??0;
+    setVal('sRestarts', rc, rc>0?'warn':'ok');
+    setVal('sHb', d.lastHeartbeat||'—', 'cyan');
+    if(d.cmdCount!==undefined) setVal('sCmdCount', d.cmdCount, 'purple');
+    if(d.evtCount!==undefined) setVal('sEvtCount', d.evtCount, 'purple');
+
+    // LED
+    const led=document.getElementById('ctrlLed');
+    const ct=document.getElementById('ctrlTxt');
+    if(led){ led.className='led '+(isOk?'on':'off'); ct.textContent=isOk?'BOT RUNNING':'BOT OFFLINE'; }
+
+    // RAM (simulated based on uptime)
+    const ram=100+Math.floor(upSec/10)+Math.floor(Math.random()*40);
+    const ramP=Math.min(100,Math.round(ram/512*100));
+    setEl('sRam',ram+' MB','warn');
+    setBar('ramBar',ramP); setEl('ramLbl',ramP+'% of 512MB');
+
+    // CPU
+    const cpu=5+Math.floor(Math.random()*20);
+    setEl('sCpu',cpu+'%','cyan');
+    setBar('cpuBar',cpu); setEl('cpuLbl',cpu+'% usage');
+
+    // Storage
+    setEl('sRom','2.4 GB','ok');
+    setBar('romBar',24,'#39ff14'); setEl('romLbl','24% of 10GB');
+
+    // GPU
+    setEl('sGpu','N/A'); setBar('gpuBar',0,'var(--purple)'); setEl('gpuLbl','Not available');
+
+    // Node info
+    const nv=document.getElementById('nodeVer');
+    if(nv) nv.value=d.nodeVersion||'Node.js LTS';
+
+    drawChart();
+    addLog('Health OK — uptime: '+fmtUp(upSec), isOk?'ok':'warn');
+  }catch(e){
+    setVal('sStatus','ERROR','error');
+    addLog('Health fetch failed: '+e.message,'error');
+  }
+}
+
+function setVal(id,val,cls){
+  const el=document.getElementById(id); if(!el) return;
+  el.textContent=val; el.className='stat-value '+(cls||'');
+}
+function setEl(id,val,cls){
+  const el=document.getElementById(id); if(!el) return;
+  el.textContent=val; if(cls) el.className='stat-value '+cls;
+}
+function setBar(id,pct,col){
+  const el=document.getElementById(id); if(!el) return;
+  el.style.width=Math.min(100,pct)+'%';
+  if(col) el.style.background=col;
+}
+function fmtUp(s){
+  if(s<60) return s+'s';
+  if(s<3600) return Math.floor(s/60)+'m '+(s%60)+'s';
+  return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
+}
+
+fetchHealth();
+setInterval(fetchHealth,15000);
+
+/* ── BOT ACTIONS ── */
+async function botAction(a){
+  const msgs={start:'Starting bot...',stop:'Stopping bot...',restart:'Restarting bot...'};
+  toast('⚡ '+msgs[a]);
+  addLog('Action sent: '+a.toUpperCase(),'warn');
+  try{
+    const res=await fetch('/api/bot/'+a,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({})
+    });
+    const d=await res.json();
+    if(d.ok){
+      toast('✅ '+a.toUpperCase()+' command sent','ok');
+      addLog('Bot '+a+' — server confirmed','ok');
+    } else {
+      toast('⚠ Server error: '+(d.error||'unknown'),'err');
+      addLog('Bot action failed: '+(d.error||'unknown'),'error');
+    }
+  }catch(e){
+    toast('⚠ Request failed: '+e.message,'err');
+    addLog('Bot action error: '+e.message,'error');
+  }
+  setTimeout(fetchHealth,2500);
+}
+
+/* ── COMMANDS & EVENTS (real data from bot) ── */
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let realCmds=[], realEvts=[];
+
+async function addCmd(){
+  const name=document.getElementById('cmdName').value.trim();
+  const code=document.getElementById('cmdCode').value.trim();
+  if(!name){ toast('⚠ Enter command name','err'); return; }
+  if(!code){ toast('⚠ Enter command code','err'); return; }
+  try{
+    const res=await fetch('/api/cmd/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,code})});
+    const d=await res.json();
+    if(d.ok){
+      toast('✅ Command "'+name+'" saved to disk!','ok');
+      addLog('New command file: '+d.file,'ok');
+      document.getElementById('cmdName').value='';
+      document.getElementById('cmdDesc').value='';
+      document.getElementById('cmdCode').value='';
+      await loadModules();
+    } else { toast('⚠ '+d.error,'err'); addLog('Add cmd failed: '+d.error,'error'); }
+  }catch(e){ toast('⚠ '+e.message,'err'); }
+}
+
+async function addEvt(){
+  const name=document.getElementById('evtName').value.trim();
+  const code=document.getElementById('evtCode').value.trim();
+  if(!name){ toast('⚠ Enter event name','err'); return; }
+  if(!code){ toast('⚠ Enter event code','err'); return; }
+  try{
+    const res=await fetch('/api/evt/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,code})});
+    const d=await res.json();
+    if(d.ok){
+      toast('✅ Event "'+name+'" saved to disk!','ok');
+      addLog('New event file: '+d.file,'ok');
+      document.getElementById('evtName').value='';
+      document.getElementById('evtDesc').value='';
+      document.getElementById('evtCode').value='';
+      await loadModules();
+    } else { toast('⚠ '+d.error,'err'); addLog('Add evt failed: '+d.error,'error'); }
+  }catch(e){ toast('⚠ '+e.message,'err'); }
+}
+
+async function loadModules(){
+  try{
+    const res=await fetch('/api/modules?_='+Date.now(),{cache:'no-store'});
+    const d=await res.json();
+    realCmds=d.commands||[];
+    realEvts=d.events||[];
+    renderCmds();
+    renderEvts();
+    updateCounts();
+  }catch(e){
+    document.getElementById('cmdWrap').innerHTML='<div class="empty">Failed to load commands: '+esc(e.message)+'</div>';
+    document.getElementById('evtWrap').innerHTML='<div class="empty">Failed to load events: '+esc(e.message)+'</div>';
+  }
+}
+
+function renderCmds(){
+  const w=document.getElementById('cmdWrap');
+  document.getElementById('cmdCnt').textContent=realCmds.length;
+  if(!realCmds.length){ w.innerHTML='<div class="empty">No commands loaded</div>'; return; }
+  w.innerHTML='<table class="dtable"><thead><tr><th>Name</th><th>Description</th><th>Category</th><th>Credits</th><th>Status</th></tr></thead><tbody>'
+    +realCmds.map(c=>{
+      const st=c.status==='failed'
+        ?'<span style="color:var(--red);font-size:10px">✖ FAIL</span>'
+        :'<span style="color:var(--green);font-size:10px">✔ OK</span>';
+      const aliases=c.aliases&&c.aliases.length?'<br><span style="color:var(--muted);font-size:9px">alias: '+esc(c.aliases.join(', '))+'</span>':'';
+      return `<tr>
+        <td class="td-name">${esc(c.name)}${aliases}</td>
+        <td class="td-muted">${esc(c.description)}</td>
+        <td><span class="badge badge-cmd">${esc(c.category)}</span></td>
+        <td class="td-muted">${esc(c.credits)}</td>
+        <td>${st}</td>
+      </tr>`;
+    }).join('')
+    +'</tbody></table>';
+}
+
+function renderEvts(){
+  const w=document.getElementById('evtWrap');
+  document.getElementById('evtCnt').textContent=realEvts.length;
+  if(!realEvts.length){ w.innerHTML='<div class="empty">No events loaded</div>'; return; }
+  w.innerHTML='<table class="dtable"><thead><tr><th>Name</th><th>Description</th><th>Event Type</th><th>Credits</th><th>Status</th></tr></thead><tbody>'
+    +realEvts.map(e=>{
+      const st=e.status==='failed'
+        ?'<span style="color:var(--red);font-size:10px">✖ FAIL</span>'
+        :'<span style="color:var(--green);font-size:10px">✔ OK</span>';
+      const evtTypes=(e.eventType||[]).map(t=>'<span class="badge badge-evt" style="font-size:8px;margin-right:2px">'+esc(t)+'</span>').join('') || '—';
+      return `<tr>
+        <td class="td-name">${esc(e.name)}</td>
+        <td class="td-muted">${esc(e.description)}</td>
+        <td>${evtTypes}</td>
+        <td class="td-muted">${esc(e.credits)}</td>
+        <td>${st}</td>
+      </tr>`;
+    }).join('')
+    +'</tbody></table>';
+}
+
+function updateCounts(){
+  const cc=realCmds.length, ec=realEvts.length;
+  document.getElementById('sCmdCount').textContent=cc;
+  document.getElementById('sEvtCount').textContent=ec;
+  document.getElementById('cmdCnt').textContent=cc;
+  document.getElementById('evtCnt').textContent=ec;
+}
+
+loadModules();
+
+/* ── COOKIES ── */
+const CK_FILES={1:'cookie.txt',2:'cookie2.txt',3:'cookie3.txt'};
+
+async function renderCks(){
+  const el=document.getElementById('ckDisplay');
+  el.innerHTML='<div class="empty">Loading...</div>';
+  try{
+    const res=await fetch('/api/cookie/status?_='+Date.now(),{cache:'no-store'});
+    const d=await res.json();
+    el.innerHTML=[1,2,3].map(n=>{
+      const c=d[n]||{};
+      const prev=c.exists?(c.preview||'Data present'):'No data saved';
+      const size=c.exists?(' — '+c.size+' bytes'):'';
+      return `<div class="ck-item">
+        <div class="ck-num">#${n}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text);margin-bottom:3px">${esc(CK_FILES[n])}</div>
+          <div class="ck-preview">${esc(prev)}${esc(size)}</div>
+        </div>
+        <span class="ck-badge ${c.exists?'yes':'no'}">${c.exists?'HAS DATA':'EMPTY'}</span>
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML='<div class="empty">Failed to load cookie status</div>';
+  }
+}
+
+async function saveCk(){
+  const slot=parseInt(document.getElementById('ckSlot').value);
+  const data=document.getElementById('ckData').value.trim();
+  if(!data){ toast('⚠ Enter cookie data','err'); return; }
+  try{
+    const res=await fetch('/api/cookie/save',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({slot,data})
+    });
+    const d=await res.json();
+    if(d.ok){
+      toast('🍪 '+d.file+' saved ('+d.size+' bytes)!','ok');
+      addLog('Cookie slot '+slot+' written to '+d.file,'ok');
+      document.getElementById('ckData').value='';
+      await renderCks();
+    } else { toast('⚠ '+d.error,'err'); addLog('Cookie save failed: '+d.error,'error'); }
+  }catch(e){ toast('⚠ '+e.message,'err'); }
+}
+
+function setActiveCk(){
+  const slot=parseInt(document.getElementById('ckSlot').value);
+  toast('ℹ Active cookie is set in config.json (APPSTATEPATH). Slot '+slot+' data saved to disk.','info');
+  addLog('Cookie slot '+slot+' — use APPSTATEPATH in config.json to set active','info');
+}
+
+renderCks();
+
+/* ── LOG ── */
+let logs=[]; let autoS=true;
+function addLog(msg,type='info'){
+  const ts=new Date().toTimeString().split(' ')[0];
+  logs.push({ts,msg,type}); if(logs.length>500) logs.shift();
+  appendLogLine({ts,msg,type});
+}
+function classifyLine(line){
+  const l=line.toLowerCase();
+  if(/\[stderr\]|error|fail|✖|exception|crash/.test(l)) return 'error';
+  if(/warn|⚠/.test(l)) return 'warn';
+  if(/✔|loaded|ok|online|success|connected|running/.test(l)) return 'ok';
+  return 'info';
+}
+function appendLogLine(entry){
+  const b=document.getElementById('logBox'); if(!b) return;
+  document.getElementById('logCnt').textContent=logs.length;
+  const d=document.createElement('div');
+  d.className='log-line';
+  const type=entry.type||classifyLine(entry.msg);
+  d.innerHTML=`<span class="log-ts">${entry.ts}</span><span class="log-tag ${type}">${type.toUpperCase()}</span><span class="log-msg">${esc(entry.msg)}</span>`;
+  b.appendChild(d);
+  if(b.children.length>500){ b.removeChild(b.firstChild); }
+  if(autoS) b.scrollTop=b.scrollHeight;
+}
+function clearLog(){
+  logs=[];
+  const b=document.getElementById('logBox'); if(b) b.innerHTML='';
+  document.getElementById('logCnt').textContent='0';
+  toast('🗑 Logs cleared');
+}
+function toggleAS(){ autoS=!autoS; document.getElementById('asTxt').textContent=autoS?'ON':'OFF'; }
+
+/* ── REAL SSE LOG STREAM ── */
+let sseConn=null;
+function startLogStream(){
+  if(sseConn){ sseConn.close(); }
+  sseConn=new EventSource('/api/logs/stream');
+  sseConn.onmessage=function(e){
+    try{
+      const d=JSON.parse(e.data);
+      const ts=new Date(d.ts).toTimeString().split(' ')[0];
+      const type=classifyLine(d.line);
+      logs.push({ts,msg:d.line,type}); if(logs.length>500) logs.shift();
+      appendLogLine({ts,msg:d.line,type});
+    }catch(_){}
+  };
+  sseConn.onerror=function(){
+    setTimeout(startLogStream, 3000);
+  };
+}
+startLogStream();
+
+// Background music (user-activated)
+const audio=document.createElement('audio');
+audio.loop=true;
+audio.src='https://raw.githubusercontent.com/SAGOR-KINGx/SaGor/main/SaGor.mp3';
+document.body.addEventListener('click',()=>audio.play().catch(()=>{}),{once:true});
+</script>
+</body>
+</html>
